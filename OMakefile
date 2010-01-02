@@ -21,7 +21,7 @@ section
 	USE_OCAMLFIND = true
 	OCAMLPACKS[] += oUnit
 	OCamlProgram(test, test_inflate inflate)
-	$(CamlTargets test test_ha6):
+	$(CamlTargets test test_inflate):
 
 .PHONY: clean
 
