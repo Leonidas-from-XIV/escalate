@@ -1,0 +1,29 @@
+BYTE_ENABLED = true
+NATIVE_ENABLED = false
+
+public.CamlTargets(mods) =
+    private.r[] = $(addsuffixes .cmi .sig, $(mods))
+    if $(NATIVE_ENABLED)
+        r[] += $(addsuffixes .cmx .o, $(mods))
+        export r
+    if $(BYTE_ENABLED)
+        r[] += $(addsuffixes .cmo, $(mods))
+        export r
+    return $(r)
+
+public.CamlCleanRecursive() =
+    rm -f $(filter-proper-targets $(ls R, .)) *.o
+
+section
+	.DEFAULT: $(OCamlProgram inflate, inflate)
+
+section
+	USE_OCAMLFIND = true
+	OCAMLPACKS[] += oUnit
+	OCamlProgram(test, test_inflate inflate)
+	$(CamlTargets test test_ha6):
+
+.PHONY: clean
+
+clean:
+	CamlCleanRecursive()

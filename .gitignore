@@ -1,0 +1,8 @@
+.omakedb*
+*.swp
+*.omc
+inflate
+test
+*.cmi
+*.cmo
+*.run

@@ -1,0 +1,6 @@
+include $(STDLIB)/build/Common
+include $(STDLIB)/build/OCaml
+
+DefineCommandVars(.)
+
+.SUBDIRS: .
