@@ -1,5 +1,8 @@
 BYTE_ENABLED = true
 NATIVE_ENABLED = false
+USE_OCAMLFIND = true
+OCAMLPACKS[] += bitstring bitstring.syntax
+OCAMLFINDFLAGS = -syntax camlp4o
 
 public.CamlTargets(mods) =
     private.r[] = $(addsuffixes .cmi .sig, $(mods))
@@ -18,7 +21,6 @@ section
 	.DEFAULT: $(OCamlProgram inflate, inflate)
 
 section
-	USE_OCAMLFIND = true
 	OCAMLPACKS[] += oUnit
 	OCamlProgram(test, test_inflate inflate)
 	$(CamlTargets test test_inflate):
