@@ -18,11 +18,18 @@ type zlibBlock = ( compressionMethod * compressionInfo * checksumHeader *
 dictPresent * compressionLevel * presetDictionary * compressedContent * checksumData )
 *)
 
+type zlib_header = { cm : int }
+
 let parse_zlib bytestring =
         let bits = Bitstring.bitstring_of_string bytestring in
         bitmatch bits with
         (*| { cm : 4 : littleendian } -> cm *)
         | { _ } -> 42
+
+let parse_zlib_header bytestring =
+        let bits = Bitstring.bitstring_of_string bytestring in
+        bitmatch bits with
+        | { cm : 4 :  littleendian } -> { cm=cm }
 
 let parse bytestring = [ (Last, Uncompressed, Payload "foo") ]
 
