@@ -7,7 +7,7 @@ let plaintext = "Blah blah blah blah blah!"
 let read_cm_info () =
         let printer = Some string_of_int in
         let header = parse_zlib_header zlib_compressed in
-        assert_equal ?printer:printer 6 header.cm
+        assert_equal ?printer:printer 8 header.cm
 
 let inflate_blah () =
         let printer = Some (fun x -> x) in
