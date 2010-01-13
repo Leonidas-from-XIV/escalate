@@ -4,10 +4,12 @@ open Inflate
 let zlib_compressed = "x\x9cs\xcaI\xccPH\xc2$\x14\x01o\x19\x08u"
 let plaintext = "Blah blah blah blah blah!"
 
-let read_cm_info () =
+let read_zlib_header () =
         let printer = Some string_of_int in
         let header = parse_zlib_header zlib_compressed in
-        assert_equal ?printer:printer 8 header.cm
+        let assert_header = assert_equal ?printer:printer in
+        assert_header 8 header.cm
+        assert_header 7 header.cinfo
 
 let inflate_blah () =
         let printer = Some (fun x -> x) in
@@ -15,7 +17,7 @@ let inflate_blah () =
 
 let suite = "Inflate" >::: [
         "inflate_blah" >:: inflate_blah;
-        "read_cm_info" >:: read_cm_info
+        "read_zlib_header" >:: read_zlib_header
 ]
 
 let _ = run_test_tt_main suite
