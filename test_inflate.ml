@@ -8,8 +8,9 @@ let read_zlib_header () =
         let printer = Some string_of_int in
         let header = parse_zlib_header zlib_compressed in
         let assert_header = assert_equal ?printer:printer in
-        assert_header 8 header.cm
-        assert_header 7 header.cinfo
+        assert_header 8 header.cm;
+        assert_header 7 header.cinfo;
+        assert_header 2 header.flevel
 
 let inflate_blah () =
         let printer = Some (fun x -> x) in
