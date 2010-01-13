@@ -7,13 +7,15 @@ let plaintext = "Blah blah blah blah blah!"
 let read_cm_info () =
         let printer = Some string_of_int in
         let header = parse_zlib_header zlib_compressed in
-        assert_equal ?printer:printer header.cm 6
+        assert_equal ?printer:printer 6 header.cm
 
 let inflate_blah () =
-        assert_equal (inflate zlib_compressed) plaintext
+        let printer = Some (fun x -> x) in
+        assert_equal ?printer:printer plaintext (inflate zlib_compressed)
 
 let suite = "Inflate" >::: [
-        "inflate_blah" >:: inflate_blah
+        "inflate_blah" >:: inflate_blah;
+        "read_cm_info" >:: read_cm_info
 ]
 
 let _ = run_test_tt_main suite
