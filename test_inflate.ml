@@ -10,7 +10,8 @@ let read_zlib_header () =
         let assert_header = assert_equal ?printer:printer in
         assert_header 8 header.cm;
         assert_header 7 header.cinfo;
-        assert_header 2 header.flevel
+        assert_header 2 header.flevel;
+        assert_header 28 header.fcheck
 
 let inflate_blah () =
         let printer = Some (fun x -> x) in

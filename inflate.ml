@@ -18,7 +18,8 @@ type zlibBlock = ( compressionMethod * compressionInfo * checksumHeader *
 dictPresent * compressionLevel * presetDictionary * compressedContent * checksumData )
 *)
 
-type zlib_header = { cm : int; cinfo : int; flevel : int}
+type zlib_header = { cm : int; cinfo : int; flevel : int; fdict : bool; 
+        fcheck : int }
 
 let parse_zlib bytestring =
         let bits = Bitstring.bitstring_of_string bytestring in
@@ -32,8 +33,12 @@ let parse_zlib_header bytestring =
         | {
             cinfo : 4 : littleendian;
             cm : 4 :  littleendian;
-            flevel : 2 : littleendian
-          } -> { cm=cm; cinfo=cinfo; flevel=flevel }
+            flevel : 2 : littleendian;
+            fdict : 1 : littleendian;
+            fcheck : 5 : littleendian
+          } ->
+                  { cm=cm; cinfo=cinfo; flevel=flevel; fdict=fdict;
+                  fcheck=fcheck}
 
 let parse bytestring = [ (Last, Uncompressed, Payload "foo") ]
 
