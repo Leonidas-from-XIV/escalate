@@ -31,11 +31,11 @@ let parse_zlib_header bytestring =
         let bits = Bitstring.bitstring_of_string bytestring in
         bitmatch bits with
         | {
-            cinfo : 4 : littleendian;
-            cm : 4 :  littleendian;
-            flevel : 2 : littleendian;
-            fdict : 1 : littleendian;
-            fcheck : 5 : littleendian
+            cinfo : 4;
+            cm : 4;
+            flevel : 2;
+            fdict : 1;
+            fcheck : 5
           } -> bitmatch bits with
                 | {checksum : 16} ->
                   {cm=cm; cinfo=cinfo; flevel=flevel; fdict=fdict;
