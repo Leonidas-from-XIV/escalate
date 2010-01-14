@@ -19,7 +19,7 @@ dictPresent * compressionLevel * presetDictionary * compressedContent * checksum
 *)
 
 type zlib_header = { cm : int; cinfo : int; flevel : int; fdict : bool; 
-        fcheck : int }
+        fcheck : int; checksum : int }
 
 let parse_zlib bytestring =
         let bits = Bitstring.bitstring_of_string bytestring in
@@ -36,9 +36,10 @@ let parse_zlib_header bytestring =
             flevel : 2 : littleendian;
             fdict : 1 : littleendian;
             fcheck : 5 : littleendian
-          } ->
-                  { cm=cm; cinfo=cinfo; flevel=flevel; fdict=fdict;
-                  fcheck=fcheck}
+          } -> bitmatch bits with
+                | {checksum : 16} ->
+                  {cm=cm; cinfo=cinfo; flevel=flevel; fdict=fdict;
+                  fcheck=fcheck; checksum=checksum}
 
 let parse bytestring = [ (Last, Uncompressed, Payload "foo") ]
 

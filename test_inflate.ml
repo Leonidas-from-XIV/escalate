@@ -11,7 +11,8 @@ let read_zlib_header () =
         assert_header 8 header.cm;
         assert_header 7 header.cinfo;
         assert_header 2 header.flevel;
-        assert_header 28 header.fcheck
+        assert_header 28 header.fcheck;
+        assert_header 30876 header.checksum
 
 let inflate_blah () =
         let printer = Some (fun x -> x) in
