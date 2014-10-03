@@ -1,0 +1,20 @@
+OASISFormat: 0.4
+Name:        escalate
+Version:     0.1.0
+Synopsis:    Implementation of the Deflate algorithm in pure OCaml
+Authors:     Marek Kubica
+License:     LGPL-3 with OCaml linking exception
+Plugins:     META (0.4), DevFiles (0.4)
+
+Library escalate
+  Path:         src
+  BuildTools:   ocamlbuild
+  BuildDepends: bitstring, bitstring.syntax
+  Modules:      Inflate
+  
+Executable "test-inflate"
+  Path:         src
+  BuildTools:   ocamlbuild
+  BuildDepends: oUnit, bitstring
+  MainIs:       test_inflate.ml
+  
