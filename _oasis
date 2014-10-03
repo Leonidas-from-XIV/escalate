@@ -3,7 +3,7 @@ Name:        escalate
 Version:     0.1.0
 Synopsis:    Implementation of the Deflate algorithm in pure OCaml
 Authors:     Marek Kubica
-License:     LGPL-3 with OCaml linking exception
+License:     ZLIB
 Plugins:     META (0.4), DevFiles (0.4)
 
 Library escalate
