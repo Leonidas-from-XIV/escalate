@@ -41,6 +41,18 @@ let parse_zlib_header bytestring =
                   {cm=cm; cinfo=cinfo; flevel=flevel; fdict=fdict;
                   fcheck=fcheck; checksum=checksum}
 
+let adler32 data =
+  let (a, b) = List.fold_left (fun (a, b) d ->
+      (* these are guaranteed to be 16 bit which fits 31 bit OCaml ints *)
+      let new_a = (a + d) mod 65521 in
+      let new_b = (b + new_a) mod 65521 in
+      (new_a, new_b))
+    (1, 0) data in
+  let a32 = Int32.of_int a
+  and b32 = Int32.of_int b
+  and c32 = Int32.of_int 65536
+  in b32 |> Int32.mul c32 |> Int32.add a32
+
 let parse bytestring = [ (Last, Uncompressed, Payload "foo") ]
 
 let inflate = function
