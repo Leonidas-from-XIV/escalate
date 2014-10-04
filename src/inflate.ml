@@ -18,7 +18,7 @@ type zlibBlock = ( compressionMethod * compressionInfo * checksumHeader *
 dictPresent * compressionLevel * presetDictionary * compressedContent * checksumData )
 *)
 
-type zlib_header = { cm : int; cinfo : int; flevel : int; fdict : bool; 
+type zlib_header = { cm : int; cinfo : int; flevel : int; fdict : bool;
         fcheck : int; checksum : int }
 
 let parse_zlib bytestring =
