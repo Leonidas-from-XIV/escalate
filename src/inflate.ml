@@ -50,8 +50,7 @@ let adler32 data =
     (1, 0) data in
   let a32 = Int32.of_int a
   and b32 = Int32.of_int b
-  and c32 = Int32.of_int 65536
-  in b32 |> Int32.mul c32 |> Int32.add a32
+  in Int32.logor a32 @@ Int32.shift_left b32 16
 
 let parse bytestring = [ (Last, Uncompressed, Payload "foo") ]
 
