@@ -21,14 +21,7 @@ dictPresent * compressionLevel * presetDictionary * compressedContent * checksum
 type zlib_header = { cm : int; cinfo : int; flevel : int; fdict : bool;
         fcheck : int; checksum : int }
 
-let parse_zlib bytestring =
-  let bits = Bitstring.bitstring_of_string bytestring in
-  bitmatch bits with
-  (*| { cm : 4 : littleendian } -> cm *)
-  | { _ } -> 42
-
-let parse_zlib_header bytestring =
-  let bits = Bitstring.bitstring_of_string bytestring in
+let parse_zlib_header bits =
   bitmatch bits with
   | {
       cinfo : 4;
@@ -40,6 +33,14 @@ let parse_zlib_header bytestring =
           | {checksum : 16} ->
             {cm=cm; cinfo=cinfo; flevel=flevel; fdict=fdict;
             fcheck=fcheck; checksum=checksum}
+
+let parse_segment _ =
+  (Last, Uncompressed, Payload "foo")
+
+let parse_zlib bytestring =
+  let bits = Bitstring.bitstring_of_string bytestring in
+  bitmatch bits with
+  | { header: 32: bitstring; _: -1: bitstring } -> parse_zlib_header header
 
 let adler32 data =
   let (a, b) = List.fold_left (fun (a, b) d ->

@@ -6,7 +6,7 @@ let plaintext = "Blah blah blah blah blah!"
 
 let read_zlib_header expected function_got () =
   let printer = Some string_of_int in
-  let header = parse_zlib_header zlib_compressed in
+  let header = parse_zlib zlib_compressed in
   let assert_header = assert_equal ?printer:printer in
   assert_header expected (function_got header)
 
