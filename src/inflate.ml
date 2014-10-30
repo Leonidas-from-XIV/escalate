@@ -22,24 +22,24 @@ type zlib_header = { cm : int; cinfo : int; flevel : int; fdict : bool;
         fcheck : int; checksum : int }
 
 let parse_zlib bytestring =
-        let bits = Bitstring.bitstring_of_string bytestring in
-        bitmatch bits with
-        (*| { cm : 4 : littleendian } -> cm *)
-        | { _ } -> 42
+  let bits = Bitstring.bitstring_of_string bytestring in
+  bitmatch bits with
+  (*| { cm : 4 : littleendian } -> cm *)
+  | { _ } -> 42
 
 let parse_zlib_header bytestring =
-        let bits = Bitstring.bitstring_of_string bytestring in
-        bitmatch bits with
-        | {
-            cinfo : 4;
-            cm : 4;
-            flevel : 2;
-            fdict : 1;
-            fcheck : 5
-          } -> bitmatch bits with
-                | {checksum : 16} ->
-                  {cm=cm; cinfo=cinfo; flevel=flevel; fdict=fdict;
-                  fcheck=fcheck; checksum=checksum}
+  let bits = Bitstring.bitstring_of_string bytestring in
+  bitmatch bits with
+  | {
+      cinfo : 4;
+      cm : 4;
+      flevel : 2;
+      fdict : 1;
+      fcheck : 5
+    } -> bitmatch bits with
+          | {checksum : 16} ->
+            {cm=cm; cinfo=cinfo; flevel=flevel; fdict=fdict;
+            fcheck=fcheck; checksum=checksum}
 
 let adler32 data =
   let (a, b) = List.fold_left (fun (a, b) d ->
@@ -52,7 +52,9 @@ let adler32 data =
   and b32 = Int32.of_int b
   in Int32.logor a32 @@ Int32.shift_left b32 16
 
-let parse bytestring = [ (Last, Uncompressed, Payload "foo") ]
+let parse bytestring =
+  [ (Last, Uncompressed, Payload "foo") ]
 
-let inflate = function
-        | _ -> "Foo"
+let inflate data =
+  ignore (parse data);
+  "Foo"
