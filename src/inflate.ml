@@ -2,7 +2,7 @@
 type blockType = Uncompressed | FixedHuffman | DynamicHuffman | Reserved
 type blockFinal = Continues | Last
 type deflatedContent = Payload of string
-type deflateBlock = ( blockFinal * blockType * deflatedContent )
+type deflateBlock = (blockFinal * blockType * deflatedContent)
 
 (* zlib *)
 (*
@@ -34,13 +34,29 @@ let parse_zlib_header bits =
             {cm=cm; cinfo=cinfo; flevel=flevel; fdict=fdict;
             fcheck=fcheck; checksum=checksum}
 
-let parse_segment _ =
-  (Last, Uncompressed, Payload "foo")
+let bfinal_of_bit = function
+  | true -> Last
+  | _ -> Continues
+
+let btype_of_bit = function
+  | 0 -> Uncompressed
+  | 1 -> FixedHuffman
+  | 2 -> DynamicHuffman
+  | _ -> Reserved
+
+let parse_segment bitstring =
+  bitmatch bitstring with
+  | { bfinal : 1; btype : 2; _: -1: bitstring} ->
+    (bfinal_of_bit bfinal, btype_of_bit btype, Payload "TODO")
+
+let parse_payload bits =
+  [parse_segment bits;]
 
 let parse_zlib bytestring =
   let bits = Bitstring.bitstring_of_string bytestring in
   bitmatch bits with
-  | { header: 32: bitstring; _: -1: bitstring } -> parse_zlib_header header
+  | { header: 32: bitstring; data: -1: bitstring } ->
+    (parse_zlib_header header, parse_payload data)
 
 let adler32 data =
   let (a, b) = List.fold_left (fun (a, b) d ->
@@ -53,9 +69,7 @@ let adler32 data =
   and b32 = Int32.of_int b
   in Int32.logor a32 @@ Int32.shift_left b32 16
 
-let parse bytestring =
-  [ (Last, Uncompressed, Payload "foo") ]
-
 let inflate data =
-  ignore (parse data);
+  let bits = Bitstring.bitstring_of_string data in
+  ignore @@ parse_payload bits;
   "Foo"
