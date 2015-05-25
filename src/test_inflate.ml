@@ -1,18 +1,18 @@
-open OUnit
+open OUnit2
 open Inflate
 
 let zlib_compressed = "x\x9cs\xcaI\xccPH\xc2$\x14\x01o\x19\x08u"
 let plaintext = "Blah blah blah blah blah!"
 
-let read_zlib_header expected function_got () =
+let read_zlib_header expected function_got _ =
   let printer = Some string_of_int in
   let header = parse_zlib zlib_compressed in
-  let assert_header = assert_equal ?printer:printer in
+  let assert_header = assert_equal ?printer in
   assert_header expected (function_got header)
 
-let inflate_blah () =
+let inflate_blah _ =
   let printer = Some (fun x -> x) in
-  assert_equal ?printer:printer plaintext (inflate zlib_compressed)
+  assert_equal ?printer plaintext (inflate zlib_compressed)
 
 let suite = "Inflate" >::: [
   "inflate_blah" >:: inflate_blah;
