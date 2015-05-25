@@ -1,0 +1,24 @@
+opam-version: "1"
+maintainer: "marek@xivilization.net"
+homepage: "https://github.com/Leonidas-from-XIV/escalate"
+license: "ZLIB"
+build: [
+  # for development. Not to be included in opam-repository
+  ["oasis" "setup"]
+  # /development
+  ["ocaml" "setup.ml" "-configure" "--prefix" prefix]
+  ["ocaml" "setup.ml" "-build"]
+  ["ocaml" "setup.ml" "-install"]
+]
+remove: [
+  ["ocamlfind" "remove" "escalate"]
+]
+depends: [
+  "ocamlfind"
+  "bitstring" {>= "2.0.4"}
+  "ounit" {>= "2.0.0"}
+  # for development. Not to be included in opam-repository
+  "oasis" {build & >= "0.4.0"}
+  # /development
+]
+available: [ ocaml-version >= "4.02.0" ]
