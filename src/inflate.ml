@@ -34,29 +34,47 @@ let parse_zlib_header bits =
             {cm=cm; cinfo=cinfo; flevel=flevel; fdict=fdict;
             fcheck=fcheck; checksum=checksum}
 
-let bfinal_of_bit = function
+let final_block = function
   | true -> Last
   | _ -> Continues
 
-let btype_of_bit = function
-  | 0 -> Uncompressed
-  | 1 -> FixedHuffman
-  | 2 -> DynamicHuffman
-  | _ -> Reserved
-
 let parse_segment bitstring =
   bitmatch bitstring with
-  | { bfinal : 1; btype : 2; _: -1: bitstring} ->
-    (bfinal_of_bit bfinal, btype_of_bit btype, Payload "TODO")
+  | { bfinal : 1;
+      (* Non-compressed block, BTYPE=00 *)
+      0 : 2;
+      len : 2 : offset(8);
+      nlen : 2;
+      content : len : string;
+      rest : -1 : bitstring } ->
+    ((final_block bfinal, Uncompressed, Payload content), rest)
+  | { bfinal : 1;
+      (* fixed Huffman, BTYPE=01 *)
+      1 : 2;
+      rest : -1 : bitstring } ->
+    ((final_block bfinal, FixedHuffman, Payload "TODO"), rest)
+  | { bfinal : 1;
+      (* dynamic Huffman, BTYPE=10 *)
+      2 : 2;
+      rest : -1 : bitstring } ->
+    ((final_block bfinal, DynamicHuffman, Payload "TODO"), rest)
+  | { bfinal : 1;
+      (* reserved, BTYPE=11, fail *)
+      3 : 2} ->
+    failwith "Reserved block, invalid bitstream"
 
-let parse_payload bits =
-  [parse_segment bits;]
+let rec parse_payload bits =
+  let seg, rest = parse_segment bits in
+  match seg with
+  | Last, _, _ -> [seg]
+  (* | Continues, _, _ -> seg :: parse_payload rest *)
+  | Continues, _, _ -> [seg]
 
 let parse_zlib bytestring =
   let bits = Bitstring.bitstring_of_string bytestring in
   bitmatch bits with
-  | { header: 32: bitstring; data: -1: bitstring } ->
-    (parse_zlib_header header, parse_payload data)
+  | { header: 16: bitstring; blocks: -1: bitstring } ->
+    (parse_zlib_header header, parse_payload blocks)
 
 let adler32 data =
   let (a, b) = List.fold_left (fun (a, b) d ->
