@@ -42,20 +42,17 @@ let parse_segment bitstring =
   bitmatch bitstring with
   | { bfinal : 1;
       (* Non-compressed block, BTYPE=00 *)
-      0 : 2;
-      len : 2 : offset(8);
-      nlen : 2;
-      content : len : string;
-      rest : -1 : bitstring } ->
-    ((final_block bfinal, Uncompressed, Payload content), rest)
+      0 : 2 } ->
+    (* ((final_block bfinal, Uncompressed, Payload content), rest) *)
+    failwith "TODO"
   | { bfinal : 1;
-      (* fixed Huffman, BTYPE=01 *)
-      1 : 2;
+      (* fixed Huffman, BTYPE=0b01, 0b10=2 in reversed *)
+      2 : 2;
       rest : -1 : bitstring } ->
     ((final_block bfinal, FixedHuffman, Payload "TODO"), rest)
   | { bfinal : 1;
-      (* dynamic Huffman, BTYPE=10 *)
-      2 : 2;
+      (* dynamic Huffman, BTYPE=10, 0b01=1 in reversed *)
+      1 : 2;
       rest : -1 : bitstring } ->
     ((final_block bfinal, DynamicHuffman, Payload "TODO"), rest)
   | { bfinal : 1;
@@ -77,14 +74,17 @@ let reverse_bits byte =
   let lookup = Array.get tab in
   ((lookup (byte land 0xf)) lsl 4) lor lookup (byte lsr 4)
 
-let reverse_string s =
-  String.map (fun x -> Char.chr @@ reverse_bits @@ Char.code x)
+let reverse_string_bits s =
+  String.map (fun x -> Char.chr @@ reverse_bits @@ Char.code x) s
 
 let parse_zlib bytestring =
   let bits = Bitstring.bitstring_of_string bytestring in
   bitmatch bits with
-  | { header: 16: bitstring; blocks: -1: bitstring } ->
-    (parse_zlib_header header, parse_payload blocks)
+  | { header: 16: bitstring; blocks: -1: string } ->
+    (parse_zlib_header header, blocks
+      |> reverse_string_bits
+      |> Bitstring.bitstring_of_string
+      |> parse_payload)
 
 let adler32 data =
   let (a, b) = List.fold_left (fun (a, b) d ->
