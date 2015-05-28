@@ -67,8 +67,18 @@ let rec parse_payload bits =
   let seg, rest = parse_segment bits in
   match seg with
   | Last, _, _ -> [seg]
-  (* | Continues, _, _ -> seg :: parse_payload rest *)
-  | Continues, _, _ -> [seg]
+  | Continues, _, _ -> seg :: parse_payload rest
+
+(* https://stackoverflow.com/questions/2602823/ *)
+let tab = [|0x0; 0x8; 0x4; 0xc; 0x2; 0xa; 0x6; 0xe;
+            0x1; 0x9; 0x5; 0xd; 0x3; 0xb; 0x7; 0xf|]
+
+let reverse_bits byte =
+  let lookup = Array.get tab in
+  ((lookup (byte land 0xf)) lsl 4) lor lookup (byte lsr 4)
+
+let reverse_string s =
+  String.map (fun x -> Char.chr @@ reverse_bits @@ Char.code x)
 
 let parse_zlib bytestring =
   let bits = Bitstring.bitstring_of_string bytestring in
