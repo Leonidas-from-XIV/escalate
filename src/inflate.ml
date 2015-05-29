@@ -176,7 +176,7 @@ let parse_segment bitstring =
       (* fixed Huffman, BTYPE=0b01, 0b10=2 in reversed *)
       2 : 2;
       rest : -1 : bitstring } ->
-    let decoded = [decode_huffman rest] in
+    let decoded, rest = decode_huffman rest in
     ((final_block bfinal, FixedHuffman, decoded), rest)
   | { bfinal : 1;
       (* dynamic Huffman, BTYPE=10, 0b01=1 in reversed *)
@@ -189,20 +189,26 @@ let parse_segment bitstring =
       3 : 2} ->
     failwith "Reserved block, invalid bitstream"
 
+let parse_adler32 bits =
+  failwith "TODO: parse ADLER32 from bitstring"
+
 let rec parse_payload bits =
   let seg, rest = parse_segment bits in
   match seg with
-  | Last, _, _ -> [seg]
-  | Continues, _, _ -> seg :: parse_payload rest
+  | Last, _, _ -> ([seg], rest)
+  | Continues, _, _ ->
+      let (segs, rest) = parse_payload rest in
+      (seg :: segs, rest)
 
 let parse_zlib bytestring =
   let bits = Bitstring.bitstring_of_string bytestring in
   bitmatch bits with
   | { header: 16: bitstring; blocks: -1: string } ->
-    (parse_zlib_header header, blocks
+    let payload, rest = blocks
       |> reverse_string_bits
       |> Bitstring.bitstring_of_string
-      |> parse_payload)
+      |> parse_payload in
+    (parse_zlib_header header, payload, rest)
 
 let adler32 data =
   let (a, b) = List.fold_left (fun (a, b) d ->
