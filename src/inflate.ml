@@ -1,3 +1,27 @@
+(**
+ * decompress DEFLATE streams
+ * Copyright (c) 2010, 2015 Marek Kubica <marek@xivilization.net>
+ *
+ * This software is provided 'as-is', without any express or implied
+ * warranty. In no event will the authors be held liable for any damages
+ * arising from the use of this software.
+ *
+ * Permission is granted to anyone to use this software for any purpose,
+ * including commercial applications, and to alter it and redistribute it
+ * freely, subject to the following restrictions:
+ *
+ *    1. The origin of this software must not be misrepresented; you must not
+ *    claim that you wrote the original software. If you use this software
+ *    in a product, an acknowledgment in the product documentation would be
+ *    appreciated but is not required.
+ *
+ *    2. Altered source versions must be plainly marked as such, and must not be
+ *    misrepresented as being the original software.
+ *
+ *    3. This notice may not be removed or altered from any source
+ *    distribution.
+ *)
+
 (* deflate *)
 type block_type = Uncompressed | FixedHuffman | DynamicHuffman | Reserved
 type block_final = Continues | Last
@@ -194,15 +218,15 @@ let align_to_next_byte bits =
   let _, offset, _ = bits in
   let byte_offset = offset mod 8 in
   if byte_offset = 0 then bits else
-    Bitstring.dropbits (8 - byte_offset) bits
+    BS.drop (8 - byte_offset) bits
 
 let parse_adler32 bits =
   let bits = bits
   |> align_to_next_byte
-  |> Bitstring.takebits 32
-  |> Bitstring.string_of_bitstring
+  |> BS.take 32
+  |> BS.to_string
   |> reverse_string_bits
-  |> Bitstring.bitstring_of_string
+  |> BS.of_string
   in
   bitmatch bits with
   | { adler32 : 32 } -> adler32
@@ -216,12 +240,12 @@ let rec parse_payload bits =
       (seg :: segs, rest)
 
 let parse_zlib bytestring =
-  let bits = Bitstring.bitstring_of_string bytestring in
+  let bits = BS.of_string bytestring in
   bitmatch bits with
   | { header: 16: bitstring; blocks: -1: string } ->
     let payload, rest = blocks
       |> reverse_string_bits
-      |> Bitstring.bitstring_of_string
+      |> BS.of_string
       |> parse_payload in
     (parse_zlib_header header, payload, parse_adler32 rest)
 
@@ -237,6 +261,6 @@ let adler32 data =
   in Int32.logor a32 @@ Int32.shift_left b32 16
 
 let inflate data =
-  let bits = Bitstring.bitstring_of_string data in
+  let bits = BS.of_string data in
   ignore @@ parse_payload bits;
   "Foo"
