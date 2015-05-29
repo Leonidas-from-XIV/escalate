@@ -1,8 +1,6 @@
 (* deflate *)
-type blockType = Uncompressed | FixedHuffman | DynamicHuffman | Reserved
-type blockFinal = Continues | Last
-type deflatedContent = Payload of string
-type deflateBlock = (blockFinal * blockType * deflatedContent)
+type block_type = Uncompressed | FixedHuffman | DynamicHuffman | Reserved
+type block_final = Continues | Last
 
 (* Huffman *)
 type distance = int
