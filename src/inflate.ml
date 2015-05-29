@@ -189,8 +189,23 @@ let parse_segment bitstring =
       3 : 2} ->
     failwith "Reserved block, invalid bitstream"
 
+(** Skips to next complete byte. Does nothing if it is aligned to a byte. *)
+let align_to_next_byte bits =
+  let _, offset, _ = bits in
+  let byte_offset = offset mod 8 in
+  if byte_offset = 0 then bits else
+    Bitstring.dropbits (8 - byte_offset) bits
+
 let parse_adler32 bits =
-  failwith "TODO: parse ADLER32 from bitstring"
+  let bits = bits
+  |> align_to_next_byte
+  |> Bitstring.takebits 32
+  |> Bitstring.string_of_bitstring
+  |> reverse_string_bits
+  |> Bitstring.bitstring_of_string
+  in
+  bitmatch bits with
+  | { adler32 : 32 } -> adler32
 
 let rec parse_payload bits =
   let seg, rest = parse_segment bits in
@@ -208,7 +223,7 @@ let parse_zlib bytestring =
       |> reverse_string_bits
       |> Bitstring.bitstring_of_string
       |> parse_payload in
-    (parse_zlib_header header, payload, rest)
+    (parse_zlib_header header, payload, parse_adler32 rest)
 
 let adler32 data =
   let (a, b) = List.fold_left (fun (a, b) d ->
