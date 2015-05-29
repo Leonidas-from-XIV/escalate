@@ -4,19 +4,10 @@ type blockFinal = Continues | Last
 type deflatedContent = Payload of string
 type deflateBlock = (blockFinal * blockType * deflatedContent)
 
-(* zlib *)
-(*
-type compressionMethod = Deflate | NotDeflate
-type compressionInfo = WindowSize of int
-type dictPresent = bool
-type presetDictionary = Dictionary
-type compressionLevel = FastestCompression | FastCompression | DefaultCompression | MaximalCompression
-type checksumHeader = int
-type compressedContent = list deflateBlock
-type checksumData = Adler32 of int
-type zlibBlock = ( compressionMethod * compressionInfo * checksumHeader *
-dictPresent * compressionLevel * presetDictionary * compressedContent * checksumData )
-*)
+(* Huffman *)
+type distance = int
+type length = int
+type huffman_elements = Literal of char | Repeat of length * distance
 
 type zlib_header = { cm : int; cinfo : int; flevel : int; fdict : bool;
         fcheck : int; checksum : int }
@@ -38,23 +29,45 @@ let final_block = function
   | true -> Last
   | _ -> Continues
 
+let decode_huffman bits =
+  bitmatch bits with
+  (* Literal 256, termination *)
+  | { element : 7 } when element = 0 ->
+      failwith "End of huffman stream"
+  (* Literal 257 - 279, distance code *)
+  | { element : 7 } when element > 0 && element <= 23 ->
+      (* TODO *)
+      Repeat (23, 42)
+  (* Literal 0 - 143 *)
+  | { element : 8 } when element >= 48 && element <= 191 ->
+      Literal (Char.chr @@ element - 0x30)
+  (* Literal 280 - 287 *)
+  | { element : 8 } when element >= 192 && element <= 199 ->
+      Literal (Char.chr @@ element - 0xC0)
+  (* Literal 144 - 255 *)
+  | { element : 9 } when element >= 400 && element <= 511 ->
+      Literal (Char.chr @@ element - 0x190)
+  | { _ } -> failwith "Invalid huffman segment"
+
 let parse_segment bitstring =
   bitmatch bitstring with
   | { bfinal : 1;
       (* Non-compressed block, BTYPE=00 *)
       0 : 2 } ->
     (* ((final_block bfinal, Uncompressed, Payload content), rest) *)
-    failwith "TODO"
+    failwith "Uncompressed data, TODO"
   | { bfinal : 1;
       (* fixed Huffman, BTYPE=0b01, 0b10=2 in reversed *)
       2 : 2;
       rest : -1 : bitstring } ->
-    ((final_block bfinal, FixedHuffman, Payload "TODO"), rest)
+    let decoded = [decode_huffman rest] in
+    ((final_block bfinal, FixedHuffman, decoded), rest)
   | { bfinal : 1;
       (* dynamic Huffman, BTYPE=10, 0b01=1 in reversed *)
       1 : 2;
-      rest : -1 : bitstring } ->
-    ((final_block bfinal, DynamicHuffman, Payload "TODO"), rest)
+      _ : -1 : bitstring } ->
+    (* ((final_block bfinal, DynamicHuffman, []), rest) *)
+    failwith "Dynamic Huffman, TODO"
   | { bfinal : 1;
       (* reserved, BTYPE=11, fail *)
       3 : 2} ->
