@@ -72,6 +72,39 @@ let length_code = function
   | 285 -> (0, 258)
   | _ -> failwith "Invalid length code"
 
+let distance_code = function
+  | 0 -> (0, 1)
+  | 1 -> (0, 2)
+  | 2 -> (0, 3)
+  | 3 -> (0, 4)
+  | 4 -> (1, 5)
+  | 5 -> (1, 7)
+  | 6 -> (2, 9)
+  | 7 -> (2, 13)
+  | 8 -> (3, 17)
+  | 9 -> (3, 25)
+  | 10 -> (4, 33)
+  | 11 -> (4, 49)
+  | 12 -> (5, 65)
+  | 13 -> (5, 97)
+  | 14 -> (6, 129)
+  | 15 -> (6, 193)
+  | 16 -> (7, 257)
+  | 17 -> (7, 385)
+  | 18 -> (8, 513)
+  | 19 -> (8, 769)
+  | 20 -> (9, 1025)
+  | 21 -> (9, 1537)
+  | 22 -> (10, 2049)
+  | 23 -> (10, 3073)
+  | 24 -> (11, 4097)
+  | 25 -> (11, 6145)
+  | 26 -> (12, 8193)
+  | 27 -> (12, 12289)
+  | 28 -> (13, 16385)
+  | 29 -> (13, 24577)
+  | _ -> failwith "Invalid distance code"
+
 let read_reversed width num =
   let rec reconstruct shifts num acc =
     match shifts with
@@ -92,22 +125,32 @@ let rec decode_huffman bits =
   (* Literal 257 - 279, distance code *)
   | { element : 7;
       rest : -1 : bitstring } when element > 0 && element <= 23 ->
-      print_endline "Distance code";
       Printf.printf "Element %d\n" element;
-      let extra_bits, offset_start = length_code @@ element + 256 in
-      Printf.printf "Extra bits %d, offset start %d\n" extra_bits offset_start;
+      let extra_bits, length_start = length_code @@ element + 256 in
+      Printf.printf "Extra bits %d, offset start %d\n" extra_bits length_start;
 
-      let offset = bitmatch rest with
-      | { offset : extra_bits } ->
-        let offset = read_reversed extra_bits (Int64.to_int offset) in
-        offset + offset_start
+      let length, rest = bitmatch rest with
+      | { length : extra_bits;
+          rest : -1 : bitstring } ->
+        let length = read_reversed extra_bits (Int64.to_int length) in
+        (length + length_start, rest)
       in
 
-      print_endline @@ "Length to offset: " ^ (string_of_int offset);
+      let distance, rest = bitmatch rest with
+      | { distance : 5;
+          rest : -1 : bitstring } ->
+            Printf.printf "Distance code %d\n" distance;
+            let extra_bits, distance_start = distance_code distance in
+            bitmatch rest with
+            | { distance : extra_bits;
+                rest : -1 : bitstring } ->
+              let distance = read_reversed extra_bits (Int64.to_int distance) in
+              (distance + distance_start, rest)
+      in
+      Printf.printf "Distance %d\n" distance;
 
       let decoded, rest = decode_huffman rest in
-      (* TODO *)
-      (Repeat (23, 42)::decoded, rest)
+      (Repeat (length, distance)::decoded, rest)
   (* Literal 0 - 143 *)
   | { element : 8;
       rest : -1 : bitstring } when element >= 48 && element <= 191 ->
