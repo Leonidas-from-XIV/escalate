@@ -12,6 +12,17 @@ type huffman_elements = Literal of char | Repeat of length * distance
 type zlib_header = { cm : int; cinfo : int; flevel : int; fdict : bool;
         fcheck : int; checksum : int }
 
+(* https://stackoverflow.com/questions/2602823/ *)
+let tab = [|0x0; 0x8; 0x4; 0xc; 0x2; 0xa; 0x6; 0xe;
+            0x1; 0x9; 0x5; 0xd; 0x3; 0xb; 0x7; 0xf|]
+
+let reverse_bits byte =
+  let lookup = Array.get tab in
+  ((lookup (byte land 0xf)) lsl 4) lor lookup (byte lsr 4)
+
+let reverse_string_bits s =
+  String.map (fun x -> Char.chr @@ reverse_bits @@ Char.code x) s
+
 let parse_zlib_header bits =
   bitmatch bits with
   | {
@@ -29,24 +40,88 @@ let final_block = function
   | true -> Last
   | _ -> Continues
 
-let decode_huffman bits =
+let length_code = function
+  | 257 -> (0, 3)
+  | 258 -> (0, 4)
+  | 259 -> (0, 5)
+  | 260 -> (0, 6)
+  | 261 -> (0, 7)
+  | 262 -> (0, 8)
+  | 263 -> (0, 9)
+  | 264 -> (0, 10)
+  | 265 -> (1, 11)
+  | 266 -> (1, 13)
+  | 267 -> (1, 15)
+  | 268 -> (1, 17)
+  | 269 -> (2, 19)
+  | 270 -> (2, 23)
+  | 271 -> (2, 27)
+  | 272 -> (2, 31)
+  | 273 -> (3, 35)
+  | 274 -> (3, 43)
+  | 275 -> (3, 51)
+  | 276 -> (3, 59)
+  | 277 -> (4, 67)
+  | 278 -> (4, 83)
+  | 279 -> (4, 99)
+  | 280 -> (4, 115)
+  | 281 -> (5, 131)
+  | 282 -> (5, 163)
+  | 283 -> (5, 195)
+  | 284 -> (5, 227)
+  | 285 -> (0, 258)
+  | _ -> failwith "Invalid length code"
+
+let read_reversed width num =
+  let rec reconstruct shifts num acc =
+    match shifts with
+    | 0 -> acc
+    | n -> let bit = num land 0x1 in
+      let acc = (bit lsl (n-1)) lor acc in
+      (* Printf.printf "Bit %d Shift %d Res %d\n" bit n acc; *)
+      reconstruct (n-1) (num lsr 1) acc
+  in
+  reconstruct width num 0
+
+let rec decode_huffman bits =
   bitmatch bits with
   (* Literal 256, termination *)
-  | { element : 7 } when element = 0 ->
-      failwith "End of huffman stream"
+  | { element : 7;
+      rest : -1 : bitstring } when element = 0 ->
+      ([], rest)
   (* Literal 257 - 279, distance code *)
-  | { element : 7 } when element > 0 && element <= 23 ->
+  | { element : 7;
+      rest : -1 : bitstring } when element > 0 && element <= 23 ->
+      print_endline "Distance code";
+      Printf.printf "Element %d\n" element;
+      let extra_bits, offset_start = length_code @@ element + 256 in
+      Printf.printf "Extra bits %d, offset start %d\n" extra_bits offset_start;
+
+      let offset = bitmatch rest with
+      | { offset : extra_bits } ->
+        let offset = read_reversed extra_bits (Int64.to_int offset) in
+        offset + offset_start
+      in
+
+      print_endline @@ "Length to offset: " ^ (string_of_int offset);
+
+      let decoded, rest = decode_huffman rest in
       (* TODO *)
-      Repeat (23, 42)
+      (Repeat (23, 42)::decoded, rest)
   (* Literal 0 - 143 *)
-  | { element : 8 } when element >= 48 && element <= 191 ->
-      Literal (Char.chr @@ element - 0x30)
+  | { element : 8;
+      rest : -1 : bitstring } when element >= 48 && element <= 191 ->
+      print_endline @@ Char.escaped @@ Char.chr @@ element - 0x30;
+      let decoded, rest = decode_huffman rest in
+      (Literal (Char.chr @@ element - 0x30)::decoded, rest)
   (* Literal 280 - 287 *)
   | { element : 8 } when element >= 192 && element <= 199 ->
-      Literal (Char.chr @@ element - 0xC0)
+      failwith "Length code"
   (* Literal 144 - 255 *)
-  | { element : 9 } when element >= 400 && element <= 511 ->
-      Literal (Char.chr @@ element - 0x190)
+  | { element : 9;
+      rest : -1 : bitstring } when element >= 400 && element <= 511 ->
+      let decoded, rest = decode_huffman rest in
+      (Literal (Char.chr @@ element - 0x190)::decoded, rest)
   | { _ } -> failwith "Invalid huffman segment"
 
 let parse_segment bitstring =
@@ -78,17 +153,6 @@ let rec parse_payload bits =
   match seg with
   | Last, _, _ -> [seg]
   | Continues, _, _ -> seg :: parse_payload rest
-
-(* https://stackoverflow.com/questions/2602823/ *)
-let tab = [|0x0; 0x8; 0x4; 0xc; 0x2; 0xa; 0x6; 0xe;
-            0x1; 0x9; 0x5; 0xd; 0x3; 0xb; 0x7; 0xf|]
-
-let reverse_bits byte =
-  let lookup = Array.get tab in
-  ((lookup (byte land 0xf)) lsl 4) lor lookup (byte lsr 4)
-
-let reverse_string_bits s =
-  String.map (fun x -> Char.chr @@ reverse_bits @@ Char.code x) s
 
 let parse_zlib bytestring =
   let bits = Bitstring.bitstring_of_string bytestring in
