@@ -172,9 +172,9 @@ let rec decode_huffman bits =
   (* Literal 257 - 279, distance code *)
   | { element : 7;
       rest : -1 : bitstring } when element > 0 && element <= 23 ->
-      Printf.printf "Element %d\n" element;
+      (* Printf.printf "Element %d\n" element; *)
       let extra_bits, length_start = length_code @@ element + 256 in
-      Printf.printf "Extra bits %d, offset start %d\n" extra_bits length_start;
+      (* Printf.printf "Extra bits %d, offset start %d\n" extra_bits length_start; *)
 
       let length, rest = bitmatch rest with
       | { length : extra_bits;
@@ -186,7 +186,7 @@ let rec decode_huffman bits =
       let distance, rest = bitmatch rest with
       | { distance : 5;
           rest : -1 : bitstring } ->
-            Printf.printf "Distance code %d\n" distance;
+            (* Printf.printf "Distance code %d\n" distance; *)
             let extra_bits, distance_start = distance_code distance in
             bitmatch rest with
             | { distance : extra_bits;
@@ -194,14 +194,13 @@ let rec decode_huffman bits =
               let distance = read_reversed extra_bits (Int64.to_int distance) in
               (distance + distance_start, rest)
       in
-      Printf.printf "Distance %d\n" distance;
+      (* Printf.printf "Distance %d\n" distance; *)
 
       let decoded, rest = decode_huffman rest in
       (Repeat (length, distance)::decoded, rest)
   (* Literal 0 - 143 *)
   | { element : 8;
       rest : -1 : bitstring } when element >= 48 && element <= 191 ->
-      print_endline @@ Char.escaped @@ Char.chr @@ element - 0x30;
       let decoded, rest = decode_huffman rest in
       (Literal (Char.chr @@ element - 0x30)::decoded, rest)
   (* Literal 280 - 287 *)

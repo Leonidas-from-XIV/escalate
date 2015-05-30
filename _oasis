@@ -11,10 +11,15 @@ Library escalate
   BuildTools:   ocamlbuild
   BuildDepends: bitstring, bitstring.syntax
   Modules:      Inflate
-  
+
 Executable "test-inflate"
   Path:         src
   BuildTools:   ocamlbuild
   BuildDepends: oUnit, bitstring
   MainIs:       test_inflate.ml
-  
+
+Executable "dump-zlib"
+  Path:         src
+  BuildTools:   ocamlbuild
+  BuildDepends: bitstring
+  MainIs:       dump_zlib.ml
