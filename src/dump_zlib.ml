@@ -17,15 +17,18 @@ let encoding = function
 
 let pp_payload = function
   | Literal x -> Printf.printf "Literal '%c'\n" x;
-  | Repeat (len, dist) -> Printf.printf "Repeat <length %d, distance %d>\n" len dist
+  | Repeat (len, dist) -> Printf.printf "Repeat <length %d, distance %d>\n"
+     len dist
 
 let pp_segments = function
   (continues, blocks) ->
-    Printf.printf "New block%s in %s encoding:\n" (final continues) (encoding blocks);
+    Printf.printf "New block%s in %s encoding:\n" (final continues)
+      (encoding blocks);
     match blocks with
     | FixedHuffman payload -> List.iter pp_payload payload
     | DynamicHuffman -> Printf.printf "Dynamic Huffman TODO\n"
-    | Uncompressed _ -> Printf.printf "Uncompressed TODO\n"
+    | Uncompressed bytes -> Printf.printf "Uncompressed %d bytes\n" @@
+      String.length bytes
 
 let () =
   let file_name = Array.get Sys.argv 1 in

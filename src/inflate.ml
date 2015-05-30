@@ -230,15 +230,21 @@ let parse_segment bitstring =
       (* Non-compressed block, BTYPE=00 *)
       0 : 2;
       rest : -1 : bitstring } ->
-    bitmatch align_to_next_byte rest with
-    | { len : 16;
-        nlen : 16;
-        rest : -1 : bitstring } ->
-      (* Printf.printf "Len %d NLen %d\n" len nlen; *)
+    let rest = rest
+      |> align_to_next_byte
+      |> BS.to_string
+      |> reverse_string_bits
+      |> BS.of_string
+    in
+    bitmatch rest with
+    | { len : 16 : littleendian;
+        nlen : 16 : littleendian;
+        rest : -1 : bitstring } -> (
       bitmatch rest with
       | { bytes : 8*len : string;
-          rest : -1 : bitstring } ->
-        ((final_block bfinal, Uncompressed bytes), rest)
+          rest : -1 : string } ->
+        let rest = rest |> reverse_string_bits |> BS.of_string in
+        ((final_block bfinal, Uncompressed bytes), rest))
   | { bfinal : 1;
       (* fixed Huffman, BTYPE=0b01, 0b10=2 in reversed *)
       2 : 2;
