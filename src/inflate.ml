@@ -45,7 +45,8 @@ type zlib_header = {
   window_size : int;
   compression_level : compression_level;
   fdict : bool;
-  fcheck : int; checksum : int
+  fcheck : int;
+  checksum : int
 }
 
 (* https://stackoverflow.com/questions/2602823/ *)
@@ -58,6 +59,13 @@ let reverse_bits byte =
 
 let reverse_string_bits s =
   String.map (fun x -> Char.chr @@ reverse_bits @@ Char.code x) s
+
+(** Skips to next complete byte. Does nothing if it is aligned to a byte. *)
+let align_to_next_byte bits =
+  let _, offset, _ = bits in
+  let byte_offset = offset mod 8 in
+  if byte_offset = 0 then bits else
+    BS.drop (8 - byte_offset) bits
 
 let compression_level = function
   | 0 -> Fastest
@@ -220,9 +228,17 @@ let parse_segment bitstring =
   bitmatch bitstring with
   | { bfinal : 1;
       (* Non-compressed block, BTYPE=00 *)
-      0 : 2 } ->
-    (* ((final_block bfinal, Uncompressed, Payload content), rest) *)
-    failwith "Uncompressed data, TODO"
+      0 : 2;
+      rest : -1 : bitstring } ->
+    bitmatch align_to_next_byte rest with
+    | { len : 16;
+        nlen : 16;
+        rest : -1 : bitstring } ->
+      (* Printf.printf "Len %d NLen %d\n" len nlen; *)
+      bitmatch rest with
+      | { bytes : 8*len : string;
+          rest : -1 : bitstring } ->
+        ((final_block bfinal, Uncompressed bytes), rest)
   | { bfinal : 1;
       (* fixed Huffman, BTYPE=0b01, 0b10=2 in reversed *)
       2 : 2;
@@ -239,13 +255,6 @@ let parse_segment bitstring =
       (* reserved, BTYPE=11, fail *)
       3 : 2} ->
     failwith "Reserved block, invalid bitstream"
-
-(** Skips to next complete byte. Does nothing if it is aligned to a byte. *)
-let align_to_next_byte bits =
-  let _, offset, _ = bits in
-  let byte_offset = offset mod 8 in
-  if byte_offset = 0 then bits else
-    BS.drop (8 - byte_offset) bits
 
 let parse_adler32 bits =
   let bits = bits
