@@ -22,7 +22,7 @@
  *    distribution.
  *)
 
-(* deflate *)
+(* DEFLATE *)
 type block_type = Uncompressed | FixedHuffman | DynamicHuffman | Reserved
 type block_final = Continues | Last
 
@@ -31,8 +31,19 @@ type distance = int
 type length = int
 type huffman_elements = Literal of char | Repeat of length * distance
 
-type zlib_header = { cm : int; cinfo : int; flevel : int; fdict : bool;
-        fcheck : int; checksum : int }
+(* ZLIB *)
+type compression_method = Deflate
+type window_size = int
+type dict_present = bool
+type compression_level = Fastest | Fast | Default | Maximum
+
+type zlib_header = {
+  compression_method : compression_method;
+  window_size : int;
+  compression_level : compression_level;
+  fdict : bool;
+  fcheck : int; checksum : int
+}
 
 (* https://stackoverflow.com/questions/2602823/ *)
 let tab = [|0x0; 0x8; 0x4; 0xc; 0x2; 0xa; 0x6; 0xe;
@@ -45,6 +56,13 @@ let reverse_bits byte =
 let reverse_string_bits s =
   String.map (fun x -> Char.chr @@ reverse_bits @@ Char.code x) s
 
+let compression_level = function
+  | 0 -> Fastest
+  | 1 -> Fast
+  | 2 -> Default
+  | 3 -> Maximum
+  | _ -> failwith "Invalid compression level"
+
 let parse_zlib_header bits =
   bitmatch bits with
   | {
@@ -55,8 +73,15 @@ let parse_zlib_header bits =
       fcheck : 5
     } -> bitmatch bits with
           | {checksum : 16} ->
-            {cm=cm; cinfo=cinfo; flevel=flevel; fdict=fdict;
-            fcheck=fcheck; checksum=checksum}
+            if cm <> 8 then failwith "Invalid compression method" else
+            {
+              compression_method = Deflate;
+              window_size = int_of_float @@ 2. ** (float_of_int cinfo +. 8.);
+              compression_level = compression_level flevel;
+              fdict = fdict;
+              fcheck = fcheck;
+              checksum = checksum
+            }
 
 let final_block = function
   | true -> Last
