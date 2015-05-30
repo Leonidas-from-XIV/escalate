@@ -22,14 +22,17 @@
  *    distribution.
  *)
 
-(* DEFLATE *)
-type block_type = Uncompressed | FixedHuffman | DynamicHuffman
-type block_final = Continues | Last
-
 (* Huffman *)
 type distance = int
 type length = int
 type huffman_elements = Literal of char | Repeat of length * distance
+
+(* DEFLATE *)
+type blocks =
+  | Uncompressed of string
+  | FixedHuffman of huffman_elements list
+  | DynamicHuffman
+type block_final = Continues | Last
 
 (* ZLIB *)
 type compression_method = Deflate
@@ -225,7 +228,7 @@ let parse_segment bitstring =
       2 : 2;
       rest : -1 : bitstring } ->
     let decoded, rest = decode_huffman rest in
-    ((final_block bfinal, FixedHuffman, decoded), rest)
+    ((final_block bfinal, FixedHuffman decoded), rest)
   | { bfinal : 1;
       (* dynamic Huffman, BTYPE=10, 0b01=1 in reversed *)
       1 : 2;
@@ -258,8 +261,8 @@ let parse_adler32 bits =
 let rec parse_payload bits =
   let seg, rest = parse_segment bits in
   match seg with
-  | Last, _, _ -> ([seg], rest)
-  | Continues, _, _ ->
+  | Last, _ -> ([seg], rest)
+  | Continues, _ ->
       let (segs, rest) = parse_payload rest in
       (seg :: segs, rest)
 
