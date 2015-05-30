@@ -10,13 +10,18 @@ let final = function
   | Last -> " (final)"
   | Continues -> ""
 
+let encoding = function
+  | FixedHuffman -> "fixed Huffman"
+  | DynamicHuffman -> "dynamic Huffman"
+  | Uncompressed -> "uncompressed"
+
 let pp_payload = function
   | Literal x -> Printf.printf "Literal '%c'\n" x;
   | Repeat (len, dist) -> Printf.printf "Repeat <length %d, distance %d>\n" len dist
 
 let pp_segments = function
-  (continues, type_, payload) ->
-    Printf.printf "New block%s:\n" (final continues);
+  (continues, t, payload) ->
+    Printf.printf "New block%s in %s encoding:\n" (final continues) (encoding t);
     List.iter pp_payload payload
 
 let () =

@@ -23,7 +23,7 @@
  *)
 
 (* DEFLATE *)
-type block_type = Uncompressed | FixedHuffman | DynamicHuffman | Reserved
+type block_type = Uncompressed | FixedHuffman | DynamicHuffman
 type block_final = Continues | Last
 
 (* Huffman *)
