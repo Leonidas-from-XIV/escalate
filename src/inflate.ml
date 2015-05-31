@@ -236,10 +236,10 @@ let parse_segment bitstring =
       |> reverse_string_bits
       |> BS.of_string
     in
-    bitmatch rest with
+    (bitmatch rest with
     | { len : 16 : littleendian;
         nlen : 16 : littleendian;
-        rest : -1 : bitstring } -> (
+        rest : -1 : bitstring } ->
       bitmatch rest with
       | { bytes : 8*len : string;
           rest : -1 : string } ->

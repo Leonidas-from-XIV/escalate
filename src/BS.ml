@@ -28,3 +28,4 @@ let of_string = bitstring_of_string
 let to_string = string_of_bitstring
 let take = takebits
 let drop = dropbits
+let hexdump = hexdump_bitstring
