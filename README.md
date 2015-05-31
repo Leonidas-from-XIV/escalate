@@ -42,6 +42,26 @@ planned to be implemented.
 | ZIP               | no     |
 
 
+Installation
+------------
+
+You want to try it out? Cool, here are the the build instructions. At best you
+get your OCaml via [OPAM](https://opam.ocaml.org/). Eventually, once this
+library matures, it will also be available from OPAM directly!
+
+If you want to build the code from the Git repository, you should follow my
+footsteps and use these commands:
+
+```sh
+opam install oasis bitstring ounit
+oasis setup
+ocaml setup.ml -configure
+ocaml setup.ml -build
+```
+
+This will get you the compiled binaries.
+
+
 License
 -------
 
